@@ -1,0 +1,48 @@
+version: "3"
+
+services:
+  nginx:
+    build:
+      context: nginx
+    networks:
+      - frontend
+    ports:
+      - 8080:80
+    depends_on:
+      - app
+
+  app:
+    build:
+      context: node
+    container_name: app
+    environment:
+      PORT: 3000
+      MYSQL_HOST: db
+      MYSQL_USER: root
+      MYSQL_PASSWORD: root
+      MYSQL_DATABASE: nodedb
+    volumes:
+      - ./node/:/usr/src/app/
+    networks:
+      - frontend
+      - backend
+    depends_on:
+      - db
+    command: wait-for db:3306 -t 20 -- npm start
+
+  db:
+    image: mysql:5.7
+    container_name: db
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: nodedb
+    volumes:
+      - ./mysql/docker-entrypoint-initdb.d/:/docker-entrypoint-initdb.d/
+      - ./mysql/data/:/var/lib/mysql
+    networks:
+      - backend
+    command: --innodb-use-native-aio=0
+
+networks:
+  frontend:
+  backend:
